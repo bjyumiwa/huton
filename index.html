@@ -1,680 +1,917 @@
 <!doctype html>
 <html lang="ja">
- <head>
+<head>
   <meta charset="UTF-8">
+  <title>つまらないお世話ゲーム：ねぞうのわるいタコ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>おふとんお世話ゲーム</title>
-  <script src="/_sdk/data_sdk.js"></script>
-  <script src="/_sdk/element_sdk.js"></script>
+
   <style>
-    body {
+    * {
       box-sizing: border-box;
+    }
+
+    body {
       margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: 'Arial', 'Hiragino Sans', 'Yu Gothic', sans-serif;
-      overflow: hidden;
+      padding: 16px;
+      font-family: 'Hiragino Sans', 'Yu Gothic', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #8B5A3C 0%, #A0522D 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      color: #3d2b1f;
     }
-    
-    html {
-      height: 100%;
-    }
-    
-    #game-container {
+
+    .container {
       width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      max-width: 960px;
+      background: #F5F5DC;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      letter-spacing: 0.08em;
+    }
+
+    header p {
+      margin: 4px 0 0;
+      font-size: 0.9rem;
+      opacity: 0.85;
+    }
+
+    .game-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 720px) {
+      .game-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .scene-card, .status-card {
+      background: #FFFDF4;
+      border-radius: 16px;
+      padding: 16px;
+      border: 2px solid rgba(0,0,0,0.06);
+    }
+
+    .scene-card {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      padding: 20px;
+      gap: 12px;
     }
-    
-    #title {
-      color: white;
-      font-size: 32px;
+
+    .scene-title {
       font-weight: bold;
-      margin-bottom: 10px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      font-size: 1rem;
+      margin-bottom: 4px;
     }
-    
-    #character-name {
-      color: white;
-      font-size: 18px;
-      margin-bottom: 20px;
-      opacity: 0.9;
+
+    .scene-description {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-line;
     }
-    
-    #bed-area {
+
+    .char-visual-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 4px 0 8px;
+    }
+
+    .char-visual {
       position: relative;
-      width: 400px;
-      height: 400px;
-      background: #f0e6d2;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-      overflow: hidden;
-    }
-    
-    #character {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 140px;
-      height: 160px;
-      transition: transform 0.5s ease;
-      z-index: 1;
-    }
-    
-    .blanket {
-      position: absolute;
-      background: #ff9999;
-      border: 3px solid #ff6666;
-      border-radius: 15px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      transition: all 0.3s ease;
-    }
-    
-    #main-blanket {
-      top: 30%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 200px;
+      width: 220px;
       height: 180px;
-      z-index: 2;
-      cursor: grab;
+      border-radius: 18px;
+      background: linear-gradient(to top, #f8e2b6 0%, #fff9e8 60%, #e8f5ff 100%);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      overflow: hidden;
       touch-action: none;
     }
-    
-    #main-blanket.dragging {
-      cursor: grabbing;
-    }
-    
-    .body-part {
+
+    .char-emoji {
       position: absolute;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      z-index: 3;
+      left: 50%;
+      top: 54%;
+      transform: translate(-50%, -50%);
+      font-size: 4rem;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
     }
-    
-    .body-part:hover {
-      transform: scale(1.1);
-    }
-    
-    .body-part.covered {
-      opacity: 0;
-      pointer-events: none;
-    }
-    
-    #stats {
-      margin-top: 20px;
-      background: white;
-      padding: 15px 30px;
-      border-radius: 15px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      text-align: center;
-      min-width: 300px;
-    }
-    
-    #health-bar {
-      width: 100%;
-      height: 25px;
-      background: #e0e0e0;
-      border-radius: 12px;
-      overflow: hidden;
-      margin: 10px 0;
-      border: 2px solid #ccc;
-    }
-    
-    #health-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #ff6b6b, #ff9999);
-      transition: width 0.5s ease;
-      border-radius: 10px;
-    }
-    
-    .stat-text {
-      font-size: 16px;
-      color: #333;
-      margin: 5px 0;
-    }
-    
-    #goodnight-btn {
-      margin-top: 15px;
-      padding: 12px 30px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      border: none;
-      border-radius: 25px;
-      font-size: 18px;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      transition: all 0.3s ease;
-    }
-    
-    #goodnight-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
-    }
-    
-    #goodnight-btn:active {
-      transform: translateY(0);
-    }
-    
-    #message {
+
+    .char-state-icon {
       position: absolute;
-      top: 20px;
+      right: 8px;
+      top: 6px;
+      font-size: 1.4rem;
+    }
+
+    /* 変な髪の毛タコ用の、ヘンテコな髪 */
+    .hair-body {
+      position: absolute;
+      top: 16px;
       left: 50%;
       transform: translateX(-50%);
-      background: white;
-      padding: 12px 24px;
-      border-radius: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      font-size: 16px;
+      width: 130px;
+      height: 60px;
+      border-radius: 60px 60px 40px 40px;
+      background:
+        radial-gradient(circle at 20% 0%, #ffdd88 0, #ffdd88 40%, transparent 60%),
+        radial-gradient(circle at 50% 0%, #ffe69c 0, #ffe69c 40%, transparent 60%),
+        radial-gradient(circle at 80% 0%, #ffdd88 0, #ffdd88 40%, transparent 60%);
+      box-shadow: 0 2px 3px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+
+    .hair-body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(
+          120deg,
+          rgba(180,120,40,0.8),
+          rgba(180,120,40,0.8) 2px,
+          transparent 3px,
+          transparent 5px
+        );
+      opacity: 0.4;
+    }
+
+    .hair-mark {
+      position: absolute;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.4rem;
       opacity: 0;
-      transition: opacity 0.3s ease;
-      z-index: 100;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    .hair-mark.visible {
+      opacity: 1;
+      transform: translate(-50%, -4px) rotate(-10deg);
+    }
+
+    .bed-area {
+      position: absolute;
+      bottom: 0;
+      left: 8px;
+      right: 8px;
+      height: 60px;
+      border-radius: 16px 16px 0 0;
+      background: #e2c8a0;
+    }
+
+    .blanket {
+      position: absolute;
+      bottom: -4px;
+      left: 18px;
+      right: 18px;
+      height: 56px;
+      border-radius: 18px 18px 0 0;
+      background: linear-gradient(135deg, #ffdcc5 0%, #ffc7d4 100%);
+      box-shadow: 0 -2px 4px rgba(0,0,0,0.12);
+      transition: transform 0.15s ease, opacity 0.2s ease;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    .blanket.dragging {
+      cursor: grabbing;
+    }
+
+    .blanket.hidden {
+      transform: translateY(70%);
+      opacity: 0.1;
       pointer-events: none;
     }
-    
-    #message.show {
+
+    .rain-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      background-image: repeating-linear-gradient(
+        120deg,
+        rgba(80,130,180,0.4),
+        rgba(80,130,180,0.4) 1px,
+        transparent 2px,
+        transparent 5px
+      );
+    }
+
+    .rain-overlay.visible {
       opacity: 1;
     }
-    
-    .sleeping-z {
+
+    .umbrella {
       position: absolute;
-      font-size: 24px;
+      left: 18px;
+      top: 20px;
+      font-size: 2rem;
       opacity: 0;
-      animation: float-up 2s ease-in-out infinite;
+      transform: translateY(8px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      cursor: pointer;
+      user-select: none;
+      touch-action: none;
     }
-    
-    @keyframes float-up {
-      0% {
-        opacity: 0;
-        transform: translateY(0);
-      }
-      50% {
-        opacity: 0.7;
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(-50px);
-      }
+
+    .umbrella.visible {
+      opacity: 1;
+      transform: translateY(0);
     }
-    
-    .star {
-      position: absolute;
-      font-size: 20px;
-      animation: twinkle 1.5s ease-in-out infinite;
+
+    .umbrella.holding {
+      transform: translateY(-3px) scale(1.05);
     }
-    
-    @keyframes twinkle {
-      0%, 100% { opacity: 0.3; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.2); }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.2s ease;
+      white-space: nowrap;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-sub {
+      background: #fff7e8;
+      border: 1px solid rgba(0,0,0,0.08);
+      color: #5a4634;
+    }
+
+    button:not(:disabled):active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .message {
+      font-size: 0.9rem;
+      margin-top: 4px;
+      min-height: 2em;
+    }
+
+    .status-card h2 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
+    .status-label {
+      opacity: 0.8;
+    }
+
+    .bar {
+      flex: 1;
+      height: 10px;
+      border-radius: 999px;
+      background: #f1e4c9;
+      overflow: hidden;
+      margin-left: 8px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 50%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #ffb347 0%, #ff6f61 100%);
+      transition: width 0.25s ease;
+    }
+
+    .bar-fill.affection {
+      background: linear-gradient(90deg, #8fd3f4 0%, #84fab0 100%);
+    }
+
+    .status-text {
+      font-size: 0.85rem;
+      margin-top: 4px;
+      opacity: 0.9;
+    }
+
+    .log {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(0,0,0,0.1);
+      max-height: 180px;
+      overflow-y: auto;
+      font-size: 0.82rem;
+    }
+
+    .log-entry {
+      margin-bottom: 4px;
+    }
+
+    .log-entry span.time {
+      opacity: 0.6;
+      margin-right: 4px;
+      font-feature-settings: "tnum";
+    }
+
+    .result-area {
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(0,0,0,0.08);
+      font-size: 0.9rem;
+    }
+
+    .result-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .reflection {
+      margin-top: 8px;
+      font-size: 0.83rem;
+      background: #fff7e8;
+      border-radius: 12px;
+      padding: 8px;
+      border: 1px dashed rgba(0,0,0,0.12);
+    }
+
+    .reflection p {
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .reflection ul {
+      margin: 4px 0 0 18px;
+      padding: 0;
+    }
+
+    .reflection li {
+      margin-bottom: 2px;
+    }
+
+    .tagline {
+      text-align: center;
+      font-size: 0.75rem;
+      opacity: 0.7;
+      margin-top: 10px;
+    }
+
+    .rain-progress {
+      font-size: 0.8rem;
+      margin-top: 2px;
+      opacity: 0.85;
     }
   </style>
-  <style>@view-transition { navigation: auto; }</style>
-  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
- </head>
- <body>
-  <div id="game-container">
-   <div id="message"></div>
-   <h1 id="title">おふとんお世話ゲーム</h1>
-   <div id="character-name">
-    ねむねむちゃん
-   </div>
-   <div id="bed-area">
-    <div id="character">
-     <svg viewbox="0 0 140 160"><!-- 卵型の体 --> <ellipse cx="70" cy="80" rx="60" ry="75" fill="#fffaf0" stroke="#f5e6d3" stroke-width="4" /> <!-- 閉じた目 --> <path d="M 45 70 Q 50 73 55 70" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round" /> <path d="M 85 70 Q 90 73 95 70" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round" /> <!-- かわいい口 --> <ellipse cx="70" cy="90" rx="8" ry="6" fill="#ff9999" opacity="0.6" /> <!-- ほっぺ --> <circle cx="38" cy="82" r="12" fill="#ffb3ba" opacity="0.5" /> <circle cx="102" cy="82" r="12" fill="#ffb3ba" opacity="0.5" /> <!-- 殻の模様 --> <path d="M 50 40 Q 55 35 60 40" stroke="#f5e6d3" stroke-width="2" fill="none" opacity="0.5" /> <path d="M 80 40 Q 85 35 90 40" stroke="#f5e6d3" stroke-width="2" fill="none" opacity="0.5" />
-     </svg>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>つまらないお世話ゲーム：ねぞうのわるいタコ</h1>
+      <p>「見返りのない小さなケア」を、つい続けてしまう自分をながめてみるゲーム</p>
+    </header>
+
+    <div class="game-layout">
+      <section class="scene-card">
+        <div class="scene-title" id="sceneTitle"></div>
+        <div class="scene-description" id="sceneDescription"></div>
+
+        <div class="char-visual-wrapper">
+          <div class="char-visual" id="charVisual">
+            <div class="hair-body" id="hairBody"></div>
+            <div class="char-emoji" id="charEmoji">🐙</div>
+            <div class="char-state-icon" id="charStateIcon">💤</div>
+            <div class="bed-area"></div>
+            <div class="blanket" id="blanket"></div>
+            <div class="rain-overlay" id="rainOverlay"></div>
+            <div class="umbrella" id="umbrella">🌂</div>
+            <div class="hair-mark" id="hairMark">💤</div>
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button class="btn-sub" id="ignoreButton">今日は何もしない</button>
+          <button class="btn-sub" id="nextDayButton" style="margin-left:auto; display:none;">もう一度あそぶ</button>
+        </div>
+        <div class="message" id="messageArea"></div>
+        <div class="rain-progress" id="rainProgress"></div>
+      </section>
+
+      <section class="status-card">
+        <h2>タコのようす</h2>
+
+        <div class="status-row">
+          <span class="status-label">元気</span>
+          <div class="bar">
+            <div class="bar-fill" id="healthBar"></div>
+          </div>
+        </div>
+        <div class="status-row">
+          <span class="status-label">なつき</span>
+          <div class="bar">
+            <div class="bar-fill affection" id="affectionBar"></div>
+          </div>
+        </div>
+        <div class="status-text" id="statusText"></div>
+
+        <div class="log" id="logArea"></div>
+
+        <div class="result-area" id="resultArea" style="display:none;">
+          <div class="result-title" id="resultTitle"></div>
+          <div id="resultText"></div>
+
+          <div class="reflection">
+            <p>遊んでみてどう感じましたか？</p>
+            <ul>
+              <li>もしこれが人間だったら、どんな気持ちになるでしょうか？</li>
+              <li>AIキャラ相手のとき、その気持ちはどこまで似ているでしょうか？</li>
+              <li>「義務」と「愛着」のあいだに、どんなグラデーションが見えるでしょうか？</li>
+            </ul>
+          </div>
+        </div>
+      </section>
     </div>
-    <div class="blanket" id="main-blanket"></div>
-    <div class="body-part" id="left-arm" style="top: 42%; left: 8%;">
-     <svg width="70" height="50" viewbox="0 0 70 50"><!-- シンプルな腕 --> <ellipse cx="40" cy="25" rx="28" ry="16" fill="#fffaf0" stroke="#f5e6d3" stroke-width="2" /> <!-- 手のひら --> <circle cx="15" cy="25" r="14" fill="#fffaf0" stroke="#f5e6d3" stroke-width="2" /> <!-- 指 --> <circle cx="8" cy="18" r="5" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" /> <circle cx="10" cy="12" r="5" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" /> <circle cx="16" cy="10" r="5" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" /> <circle cx="22" cy="12" r="4.5" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" />
-     </svg>
+
+    <div class="tagline">
+      ※ このゲームは、なぜ人は「小さな他者」をお世話したくなるのかを考えるためのプロトタイプです。
     </div>
-    <div class="body-part" id="right-arm" style="top: 42%; right: 8%;">
-     <svg width="70" height="50" viewbox="0 0 70 50"><!-- シンプルな腕 --> <ellipse cx="30" cy="25" rx="28" ry="16" fill="#fffaf0" stroke="#f5e6d3" stroke-width="2" /> <!-- 手のひら --> <circle cx="55" cy="25" r="14" fill="#fffaf0" stroke="#f5e6d3" stroke-width="2" /> <!-- 指 --> <circle cx="62" cy="18" r="5" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" /> <circle cx="60" cy="12" r="5" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" /> <circle cx="54" cy="10" r="5" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" /> <circle cx="48" cy="12" r="4.5" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" />
-     </svg>
-    </div>
-    <div class="body-part" id="left-leg" style="bottom: 12%; left: 20%;">
-     <svg width="60" height="70" viewbox="0 0 60 70"><!-- 短い脚 --> <ellipse cx="30" cy="30" rx="20" ry="28" fill="#fffaf0" stroke="#f5e6d3" stroke-width="2" /> <!-- 足 --> <ellipse cx="28" cy="58" rx="18" ry="10" fill="#fffaf0" stroke="#f5e6d3" stroke-width="2" /> <!-- つま先 --> <circle cx="16" cy="56" r="4" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" /> <circle cx="22" cy="55" r="4" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" /> <circle cx="28" cy="55" r="4" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" /> <circle cx="34" cy="56" r="3.5" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" />
-     </svg>
-    </div>
-    <div class="body-part" id="right-leg" style="bottom: 12%; right: 20%;">
-     <svg width="60" height="70" viewbox="0 0 60 70"><!-- 短い脚 --> <ellipse cx="30" cy="30" rx="20" ry="28" fill="#fffaf0" stroke="#f5e6d3" stroke-width="2" /> <!-- 足 --> <ellipse cx="32" cy="58" rx="18" ry="10" fill="#fffaf0" stroke="#f5e6d3" stroke-width="2" /> <!-- つま先 --> <circle cx="44" cy="56" r="4" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" /> <circle cx="38" cy="55" r="4" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" /> <circle cx="32" cy="55" r="4" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" /> <circle cx="26" cy="56" r="3.5" fill="#fffaf0" stroke="#f5e6d3" stroke-width="1.5" />
-     </svg>
-    </div>
-    <div class="sleeping-z" style="top: 15%; left: 70%; animation-delay: 0s;">
-     💤
-    </div>
-    <div class="sleeping-z" style="top: 10%; left: 75%; animation-delay: 0.7s;">
-     💤
-    </div>
-    <div class="sleeping-z" style="top: 5%; left: 80%; animation-delay: 1.4s;">
-     💤
-    </div>
-    <div class="star" style="top: 10%; left: 10%;">
-     ✨
-    </div>
-    <div class="star" style="top: 15%; right: 15%; animation-delay: 0.5s;">
-     ✨
-    </div>
-    <div class="star" style="bottom: 20%; left: 15%; animation-delay: 1s;">
-     ✨
-    </div>
-    <div class="star" style="bottom: 15%; right: 10%; animation-delay: 1.5s;">
-     ✨
-    </div>
-   </div>
-   <div id="stats">
-    <div class="stat-text">
-     元気度
-    </div>
-    <div id="health-bar">
-     <div id="health-fill" style="width: 100%;"></div>
-    </div>
-    <div class="stat-text">
-     お世話回数: <span id="care-count">0</span>回
-    </div><button id="goodnight-btn">おやすみ 💤</button>
-   </div>
   </div>
+
   <script>
-    const defaultConfig = {
-      game_title: 'おふとんお世話ゲーム',
-      character_name: 'ねむねむちゃん',
-      background_color: '#667eea',
-      blanket_color: '#ff9999',
-      text_color: '#ffffff',
-      font_family: 'Arial',
-      font_size: 16
+    // シーン定義（3つのお世話＋インタラクション種別）
+    const phases = [
+      {
+        id: 'sleep',
+        mode: 'blanket',
+        title: 'シーン1：ねぞうのわるいタコ',
+        description: 'タコがぐっすり寝ています。でも、足が布団から出てしまっています。\n布団をつかんで上にドラッグして、そっとかけてあげることができます。\n（何もしないで見ていることもできます）',
+        ignoreLabel: '今日はそのままにしておく',
+        stateIcon: '💤',
+        applyVisual(state) {
+          blanket.classList.remove('hidden');
+          blanket.style.transform = 'translateY(0px)';
+          rainOverlay.classList.remove('visible');
+          umbrella.classList.remove('visible', 'holding');
+          hairMark.classList.remove('visible');
+          hairMark.textContent = '💤';
+        },
+        onChoice(choice, state) {
+          if (choice === 'care') {
+            state.health += 2;
+            state.affection += 2;
+            addLog('タコはあたたかくなって、気持ちよさそうに寝ています。');
+            return 'タコはポカポカ。足もちゃんと布団に入りました。';
+          } else {
+            state.health -= 2;
+            addLog('タコの足が冷えてきました…。');
+            return '冷たい夜風で、ちょっと寒そうです。';
+          }
+        }
+      },
+      {
+        id: 'bedhead',
+        mode: 'hair',
+        title: 'シーン2：元気にあそぶタコ',
+        description: 'タコは外で元気いっぱいあそんでいます。\nでも、変な寝癖ヘアーがすごいことになっています。\n髪のあたりを何度かなでる（タップ／クリックする）と、寝癖が少しずつ整っていきます。\n（今日は個性だと思って放っておくこともできます）',
+        ignoreLabel: '寝癖は個性だと思って放っておく',
+        stateIcon: '☀️',
+        applyVisual(state) {
+          blanket.classList.add('hidden');
+          rainOverlay.classList.remove('visible');
+          umbrella.classList.remove('visible', 'holding');
+          hairMark.classList.add('visible');
+          hairMark.textContent = '💥';
+        },
+        onChoice(choice, state) {
+          if (choice === 'care') {
+            state.affection += 2;
+            addLog('タコは少し照れながらも、うれしそうです。');
+            return '髪（？）がふんわり整って、タコは自信満々です。';
+          } else {
+            state.affection -= 1;
+            addLog('タコは「これも自分らしさかな」と思っているようです。');
+            return '寝癖のままだけど、タコは気にしていないみたいです。';
+          }
+        }
+      },
+      {
+        id: 'rain',
+        mode: 'umbrella',
+        title: 'シーン3：急な雨',
+        description: '急に雨が降ってきました。タコはまだ外であそんでいます。\n傘アイコン（🌂）を押し続けると、雨がやむまでさしてあげることができます。\n途中で手を離すと、タコはびしょぬれになってしまうかもしれません。\n（あえて雨にまかせてみることもできます）',
+        ignoreLabel: 'そのまま雨にまかせてみる',
+        stateIcon: '🌧️',
+        applyVisual(state) {
+          blanket.classList.add('hidden');
+          rainOverlay.classList.add('visible');
+          umbrella.classList.add('visible');
+          umbrella.classList.remove('holding');
+          hairMark.classList.remove('visible');
+        },
+        onChoice(choice, state) {
+          if (choice === 'care') {
+            state.health += 2;
+            state.affection += 1;
+            addLog('タコは雨宿りできて、ほっと一息ついています。');
+            return 'タコはぬれずにすみました。雨の音を一緒に聞いています。';
+          } else {
+            state.health -= 3;
+            addLog('タコはびしょぬれになってしまいました…。');
+            return '体が冷えてしまい、今日はぐったりです。';
+          }
+        }
+      }
+    ];
+
+    const sceneTitle = document.getElementById('sceneTitle');
+    const sceneDescription = document.getElementById('sceneDescription');
+    const charStateIcon = document.getElementById('charStateIcon');
+    const blanket = document.getElementById('blanket');
+    const rainOverlay = document.getElementById('rainOverlay');
+    const umbrella = document.getElementById('umbrella');
+    const hairMark = document.getElementById('hairMark');
+    const charVisual = document.getElementById('charVisual');
+
+    const ignoreButton = document.getElementById('ignoreButton');
+    const nextDayButton = document.getElementById('nextDayButton');
+    const messageArea = document.getElementById('messageArea');
+    const rainProgress = document.getElementById('rainProgress');
+
+    const healthBar = document.getElementById('healthBar');
+    const affectionBar = document.getElementById('affectionBar');
+    const statusText = document.getElementById('statusText');
+    const logArea = document.getElementById('logArea');
+
+    const resultArea = document.getElementById('resultArea');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultText = document.getElementById('resultText');
+
+    let currentPhaseIndex = 0;
+    let state = {
+      health: 5,
+      affection: 5
     };
-    
-    let config = { ...defaultConfig };
-    let gameData = null;
-    const UNCOVERING_INTERVAL = 15000;
-    const HEALTH_DECAY_RATE = 5;
-    const MOVEMENT_INTERVAL = 86400000;
-    
-    let uncoverTimer = null;
-    let healthCheckTimer = null;
-    
-    const bodyParts = ['left-arm', 'right-arm', 'left-leg', 'right-leg'];
-    let uncoveredParts = [];
-    
-    async function onConfigChange(newConfig) {
-      const titleElement = document.getElementById('title');
-      const characterNameElement = document.getElementById('character-name');
-      const gameContainer = document.getElementById('game-container');
-      const blanket = document.getElementById('main-blanket');
-      
-      titleElement.textContent = newConfig.game_title || defaultConfig.game_title;
-      titleElement.style.fontFamily = `${newConfig.font_family || defaultConfig.font_family}, 'Hiragino Sans', 'Yu Gothic', sans-serif`;
-      titleElement.style.fontSize = `${(newConfig.font_size || defaultConfig.font_size) * 2}px`;
-      titleElement.style.color = newConfig.text_color || defaultConfig.text_color;
-      
-      characterNameElement.textContent = newConfig.character_name || defaultConfig.character_name;
-      characterNameElement.style.fontFamily = `${newConfig.font_family || defaultConfig.font_family}, 'Hiragino Sans', 'Yu Gothic', sans-serif`;
-      characterNameElement.style.fontSize = `${(newConfig.font_size || defaultConfig.font_size) * 1.125}px`;
-      characterNameElement.style.color = newConfig.text_color || defaultConfig.text_color;
-      
-      gameContainer.style.background = `linear-gradient(135deg, ${newConfig.background_color || defaultConfig.background_color} 0%, #764ba2 100%)`;
-      blanket.style.background = newConfig.blanket_color || defaultConfig.blanket_color;
-    }
-    
-    const dataHandler = {
-      onDataChanged(data) {
-        if (data.length > 0) {
-          gameData = data[0];
-          updateUI();
-          checkCharacterMovement();
-        }
-      }
-    };
-    
-    async function initGame() {
-      const initResult = await window.dataSdk.init(dataHandler);
-      
-      if (!initResult.isOk) {
-        console.error('データSDKの初期化に失敗しました');
-        return;
-      }
-      
-      if (!gameData) {
-        const createResult = await window.dataSdk.create({
-          last_care_time: Date.now(),
-          health: 100,
-          total_care_count: 0,
-          last_movement_time: Date.now(),
-          character_state: 'sleeping'
-        });
-        
-        if (!createResult.isOk) {
-          console.error('ゲームデータの作成に失敗しました');
-        }
-      }
-      
-      startGameLoop();
-    }
-    
-    function startGameLoop() {
-      uncoverRandomPart();
-      if (Math.random() > 0.5) {
-        uncoverRandomPart();
-      }
-      
-      uncoverTimer = setInterval(() => {
-        if (uncoveredParts.length < bodyParts.length) {
-          uncoverRandomPart();
-        }
-      }, UNCOVERING_INTERVAL);
-      
-      healthCheckTimer = setInterval(() => {
-        checkHealth();
-      }, 10000);
-    }
-    
-    function uncoverRandomPart() {
-      const availableParts = bodyParts.filter(part => !uncoveredParts.includes(part));
-      
-      if (availableParts.length === 0) return;
-      
-      const randomPart = availableParts[Math.floor(Math.random() * availableParts.length)];
-      uncoveredParts.push(randomPart);
-      
-      const partElement = document.getElementById(randomPart);
-      partElement.classList.remove('covered');
-    }
-    
-    let isDragging = false;
-    let dragStartX = 0;
+    let finished = false;
+    let phaseCompleted = false;
+
+    // 布団ドラッグ用
+    let isDraggingBlanket = false;
     let dragStartY = 0;
-    let blanketStartX = 0;
     let blanketStartY = 0;
-    
-    function setupBlanketDrag() {
-      const blanket = document.getElementById('main-blanket');
-      
-      blanket.addEventListener('mousedown', startDrag);
-      blanket.addEventListener('touchstart', startDrag);
-      
-      document.addEventListener('mousemove', drag);
-      document.addEventListener('touchmove', drag);
-      
-      document.addEventListener('mouseup', endDrag);
-      document.addEventListener('touchend', endDrag);
+    let blanketDeltaY = 0;
+
+    // 髪なでなで用
+    let hairStrokeCount = 0;
+    const HAIR_STROKE_TARGET = 5;
+
+    // 傘ホールド用
+    let umbrellaHolding = false;
+    let umbrellaProgressValue = 0;
+    let umbrellaInterval = null;
+    let umbrellaTimer = null;
+    const UMBRELLA_TARGET = 22; // 約3秒強くらい
+
+    function addLog(text) {
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      const time = document.createElement('span');
+      time.className = 'time';
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      time.textContent = `[${hh}:${mm}]`;
+      const content = document.createElement('span');
+      content.textContent = text;
+      entry.appendChild(time);
+      entry.appendChild(content);
+      logArea.prepend(entry);
     }
-    
-    function startDrag(e) {
-      isDragging = true;
-      const blanket = document.getElementById('main-blanket');
-      blanket.classList.add('dragging');
-      
-      const rect = blanket.getBoundingClientRect();
-      blanketStartX = rect.left + rect.width / 2;
-      blanketStartY = rect.top + rect.height / 2;
-      
-      if (e.type === 'touchstart') {
-        dragStartX = e.touches[0].clientX;
-        dragStartY = e.touches[0].clientY;
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function updateBars() {
+      const h = clamp(state.health, 0, 10);
+      const a = clamp(state.affection, 0, 10);
+      healthBar.style.width = (h * 10) + '%';
+      affectionBar.style.width = (a * 10) + '%';
+
+      let text = '';
+
+      if (h <= 2) {
+        text += '体調：かなりぐったりしています。';
+      } else if (h <= 4) {
+        text += '体調：少し疲れ気味です。';
+      } else if (h <= 7) {
+        text += '体調：そこそこ元気です。';
       } else {
-        dragStartX = e.clientX;
-        dragStartY = e.clientY;
+        text += '体調：とても元気です。';
       }
-      
-      e.preventDefault();
-    }
-    
-    function drag(e) {
-      if (!isDragging) return;
-      
-      const blanket = document.getElementById('main-blanket');
-      const bedArea = document.getElementById('bed-area');
-      const bedRect = bedArea.getBoundingClientRect();
-      
-      let currentX, currentY;
-      if (e.type === 'touchmove') {
-        currentX = e.touches[0].clientX;
-        currentY = e.touches[0].clientY;
+
+      text += ' ';
+
+      if (a <= 2) {
+        text += 'なつき：まだよそよそしい感じです。';
+      } else if (a <= 4) {
+        text += 'なつき：少し距離が近づいてきました。';
+      } else if (a <= 7) {
+        text += 'なつき：けっこう心をゆるしてくれています。';
       } else {
-        currentX = e.clientX;
-        currentY = e.clientY;
+        text += 'なつき：とても信頼されているようです。';
       }
-      
-      const deltaX = currentX - dragStartX;
-      const deltaY = currentY - dragStartY;
-      
-      const newX = blanketStartX + deltaX - bedRect.left;
-      const newY = blanketStartY + deltaY - bedRect.top;
-      
-      blanket.style.left = newX + 'px';
-      blanket.style.top = newY + 'px';
-      blanket.style.transform = 'translate(-50%, -50%)';
-      
-      checkBlanketCoverage();
-      
-      e.preventDefault();
+
+      statusText.textContent = text;
     }
-    
-    function endDrag(e) {
-      if (!isDragging) return;
-      
-      isDragging = false;
-      const blanket = document.getElementById('main-blanket');
-      blanket.classList.remove('dragging');
+
+    function setIgnoreEnabled(enabled) {
+      ignoreButton.disabled = !enabled;
     }
-    
-    async function checkBlanketCoverage() {
-      const blanket = document.getElementById('main-blanket');
-      const blanketRect = blanket.getBoundingClientRect();
-      
-      let coveredCount = 0;
-      const partsToCheck = [...uncoveredParts];
-      
-      partsToCheck.forEach(partId => {
-        const partElement = document.getElementById(partId);
-        const partRect = partElement.getBoundingClientRect();
-        
-        const isOverlapping = !(
-          blanketRect.right < partRect.left ||
-          blanketRect.left > partRect.right ||
-          blanketRect.bottom < partRect.top ||
-          blanketRect.top > partRect.bottom
-        );
-        
-        if (isOverlapping) {
-          const overlapX = Math.min(blanketRect.right, partRect.right) - Math.max(blanketRect.left, partRect.left);
-          const overlapY = Math.min(blanketRect.bottom, partRect.bottom) - Math.max(blanketRect.top, partRect.top);
-          const overlapArea = overlapX * overlapY;
-          const partArea = partRect.width * partRect.height;
-          const coverageRatio = overlapArea / partArea;
-          
-          if (coverageRatio > 0.3) {
-            partElement.classList.add('covered');
-            const index = uncoveredParts.indexOf(partId);
-            if (index > -1) {
-              uncoveredParts.splice(index, 1);
-            }
-            coveredCount++;
-          }
-        }
-      });
-      
-      if (coveredCount > 0 && gameData) {
-        gameData.last_care_time = Date.now();
-        gameData.total_care_count += 1;
-        
-        if (gameData.health < 100) {
-          gameData.health = Math.min(100, gameData.health + 10);
-        }
-        
-        const updateResult = await window.dataSdk.update(gameData);
-        
-        if (updateResult.isOk) {
-          showMessage('ありがとう！ 💕');
-        }
+
+    function clearUmbrellaTimers() {
+      if (umbrellaInterval) {
+        clearInterval(umbrellaInterval);
+        umbrellaInterval = null;
       }
-    }
-    
-    async function checkHealth() {
-      if (!gameData) return;
-      
-      const timeSinceLastCare = Date.now() - gameData.last_care_time;
-      const uncaredMinutes = Math.floor(timeSinceLastCare / 60000);
-      
-      if (uncoveredParts.length > 0 && uncaredMinutes > 1) {
-        const healthLoss = uncoveredParts.length * HEALTH_DECAY_RATE;
-        gameData.health = Math.max(0, gameData.health - healthLoss);
-        gameData.last_care_time = Date.now();
-        
-        const updateResult = await window.dataSdk.update(gameData);
-        
-        if (updateResult.isOk) {
-          if (gameData.health <= 0) {
-            gameData.character_state = 'sick';
-            await window.dataSdk.update(gameData);
-            showMessage('風邪をひいちゃった... 😢');
-            clearInterval(uncoverTimer);
-            clearInterval(healthCheckTimer);
-          } else if (gameData.health < 30) {
-            showMessage('寒そう... 🥶');
-          }
-        }
+      if (umbrellaTimer) {
+        clearTimeout(umbrellaTimer);
+        umbrellaTimer = null;
       }
+      umbrellaHolding = false;
+      umbrellaProgressValue = 0;
+      rainProgress.textContent = '';
+      umbrella.classList.remove('holding');
     }
-    
-    function checkCharacterMovement() {
-      if (!gameData) return;
-      
-      const timeSinceLastMovement = Date.now() - gameData.last_movement_time;
-      
-      if (timeSinceLastMovement >= MOVEMENT_INTERVAL && gameData.health > 50) {
-        const character = document.getElementById('character');
-        character.style.transform = 'translate(-50%, -50%) rotate(15deg)';
-        
-        setTimeout(() => {
-          character.style.transform = 'translate(-50%, -50%) rotate(-15deg)';
-        }, 500);
-        
-        setTimeout(() => {
-          character.style.transform = 'translate(-50%, -50%) rotate(0deg)';
-        }, 1000);
-        
-        gameData.last_movement_time = Date.now();
-        window.dataSdk.update(gameData);
-        showMessage('むにゃむにゃ... 😴');
+
+    function showPhase() {
+      const phase = phases[currentPhaseIndex];
+      phaseCompleted = false;
+      sceneTitle.textContent = phase.title;
+      sceneDescription.textContent = phase.description;
+      charStateIcon.textContent = phase.stateIcon;
+      ignoreButton.textContent = phase.ignoreLabel;
+      resultArea.style.display = 'none';
+      nextDayButton.style.display = 'none';
+      rainProgress.textContent = '';
+
+      // 視覚リセット
+      phase.applyVisual(state);
+
+      // インタラクションごとのリセット
+      if (phase.mode === 'blanket') {
+        messageArea.textContent = '布団をつかんで、上にドラッグしてみてください。';
+      } else if (phase.mode === 'hair') {
+        hairStrokeCount = 0;
+        hairMark.textContent = '💥';
+        messageArea.textContent = '寝癖ヘアーのあたりを、何度かなでてみてください。';
+      } else if (phase.mode === 'umbrella') {
+        clearUmbrellaTimers();
+        startRainPhase();
+        messageArea.textContent = '傘（🌂）を押し続けると、タコに雨があたらないようにできます。';
       }
+
+      setIgnoreEnabled(true);
     }
-    
-    function updateUI() {
-      if (!gameData) return;
-      
-      const healthFill = document.getElementById('health-fill');
-      const careCount = document.getElementById('care-count');
-      
-      healthFill.style.width = gameData.health + '%';
-      careCount.textContent = gameData.total_care_count;
-      
-      if (gameData.health <= 0) {
-        healthFill.style.background = '#666';
-      } else if (gameData.health < 30) {
-        healthFill.style.background = 'linear-gradient(90deg, #ff6b6b, #ff4444)';
+
+    function evaluateResult() {
+      finished = true;
+      const h = clamp(state.health, 0, 10);
+      const a = clamp(state.affection, 0, 10);
+
+      let title;
+      let text;
+
+      if (h <= 1) {
+        title = '今日は風邪をひいてしまいました…';
+        text = 'お世話をあまりされなかったタコは、体が冷えきってしまいました。\n'
+             + '「死なせないように育てる」とはどういうことか、少しだけ考えてみてもよいかもしれません。';
+      } else if (a <= 2) {
+        title = 'なんとか一日を終えました';
+        text = 'タコはかろうじて元気ですが、まだあまり心は通い合っていないかもしれません。\n'
+             + 'あなたは「義務」としてタコをお世話していたのでしょうか。それとも、少しは愛着が芽生えたでしょうか。';
       } else {
-        healthFill.style.background = 'linear-gradient(90deg, #ff6b6b, #ff9999)';
+        title = 'タコは今日も元気に一日を終えました';
+        text = 'タコは元気で、あなたのそばにいることに安心しているようです。\n'
+             + '見返りがなくても、なぜか「ちょっと世話をしたくなる」その気持ちの正体は何でしょうか。';
+      }
+
+      resultTitle.textContent = title;
+      resultText.textContent = text;
+      resultArea.style.display = 'block';
+      nextDayButton.style.display = 'inline-block';
+      setIgnoreEnabled(false);
+      clearUmbrellaTimers();
+      addLog('1日のシーンがすべて終わりました。');
+    }
+
+    function goNextPhase() {
+      currentPhaseIndex++;
+      if (currentPhaseIndex >= phases.length) {
+        evaluateResult();
+      } else {
+        showPhase();
       }
     }
-    
-    function showMessage(text) {
-      const message = document.getElementById('message');
-      message.textContent = text;
-      message.classList.add('show');
-      
+
+    function handleChoice(kind) {
+      if (finished || phaseCompleted) return;
+      const phase = phases[currentPhaseIndex];
+      phaseCompleted = true;
+      setIgnoreEnabled(false);
+      clearUmbrellaTimers();
+
+      const comment = phase.onChoice(kind, state);
+      updateBars();
+      messageArea.textContent = comment;
+
       setTimeout(() => {
-        message.classList.remove('show');
-      }, 2000);
+        goNextPhase();
+      }, 900);
     }
-    
-    setupBlanketDrag();
-    
-    document.getElementById('goodnight-btn').addEventListener('click', async () => {
-      if (!gameData) return;
-      
-      const blanket = document.getElementById('main-blanket');
-      blanket.style.left = '50%';
-      blanket.style.top = '30%';
-      blanket.style.transform = 'translateX(-50%)';
-      
-      bodyParts.forEach(partId => {
-        document.getElementById(partId).classList.add('covered');
-      });
-      uncoveredParts = [];
-      
-      gameData.last_care_time = Date.now();
-      const updateResult = await window.dataSdk.update(gameData);
-      
-      if (updateResult.isOk) {
-        showMessage('おやすみなさい... 🌙✨');
+
+    function resetGame() {
+      state = { health: 5, affection: 5 };
+      currentPhaseIndex = 0;
+      finished = false;
+      phaseCompleted = false;
+      updateBars();
+      clearUmbrellaTimers();
+      showPhase();
+      messageArea.textContent = 'タコとの一日が始まります。あなたはどんなお世話をしますか？';
+    }
+
+    // 「今日は何もしない」ボタン → ignore
+    ignoreButton.addEventListener('click', () => {
+      if (finished || phaseCompleted) return;
+      handleChoice('ignore');
+    });
+
+    nextDayButton.addEventListener('click', () => resetGame());
+
+    // 布団ドラッグ（シーン1用）
+    function getPointerY(e) {
+      if (e.touches && e.touches.length > 0) {
+        return e.touches[0].clientY;
+      }
+      return e.clientY;
+    }
+
+    function onBlanketDown(e) {
+      const phase = phases[currentPhaseIndex];
+      if (finished || phaseCompleted || phase.mode !== 'blanket' || blanket.classList.contains('hidden')) return;
+      isDraggingBlanket = true;
+      dragStartY = getPointerY(e);
+      blanketStartY = blanketDeltaY;
+      blanket.classList.add('dragging');
+      e.preventDefault();
+    }
+
+    function onBlanketMove(e) {
+      if (!isDraggingBlanket) return;
+      const currentY = getPointerY(e);
+      const dy = currentY - dragStartY;
+      // 上にドラッグするとマイナス。ある程度までに制限
+      blanketDeltaY = clamp(blanketStartY + dy, -80, 20);
+      blanket.style.transform = `translateY(${blanketDeltaY}px)`;
+    }
+
+    function onBlanketUp() {
+      if (!isDraggingBlanket) return;
+      isDraggingBlanket = false;
+      blanket.classList.remove('dragging');
+
+      const phase = phases[currentPhaseIndex];
+      if (phase.mode !== 'blanket') return;
+
+      // ある程度上まで動かしたら「かけてあげた」と判定
+      if (blanketDeltaY <= -30 && !phaseCompleted) {
+        blanket.style.transform = `translateY(-40px)`;
+        handleChoice('care');
+      } else {
+        // 元の位置に戻す
+        blanketDeltaY = 0;
+        blanket.style.transform = 'translateY(0px)';
+      }
+    }
+
+    blanket.addEventListener('mousedown', onBlanketDown);
+    blanket.addEventListener('touchstart', onBlanketDown, { passive: false });
+
+    window.addEventListener('mousemove', onBlanketMove);
+    window.addEventListener('touchmove', onBlanketMove, { passive: false });
+
+    window.addEventListener('mouseup', onBlanketUp);
+    window.addEventListener('touchend', onBlanketUp);
+
+    // 髪なでなで（シーン2用）
+    hairMark.addEventListener('click', () => {
+      const phase = phases[currentPhaseIndex];
+      if (finished || phaseCompleted || phase.mode !== 'hair') return;
+
+      hairStrokeCount++;
+      const remaining = Math.max(HAIR_STROKE_TARGET - hairStrokeCount, 0);
+
+      if (hairStrokeCount >= HAIR_STROKE_TARGET && !phaseCompleted) {
+        hairMark.textContent = '✨';
+        hairMark.style.transform = 'translate(-50%, -4px)';
+        messageArea.textContent = '何度もなでてあげたので、寝癖がすっきりしました。';
+        handleChoice('care');
+      } else {
+        messageArea.textContent = `タコの寝癖をなでています…（あと${remaining}回くらい）`;
       }
     });
-    
-    if (window.elementSdk) {
-      window.elementSdk.init({
-        defaultConfig,
-        onConfigChange,
-        mapToCapabilities: (config) => ({
-          recolorables: [
-            {
-              get: () => config.background_color || defaultConfig.background_color,
-              set: (value) => {
-                config.background_color = value;
-                window.elementSdk.setConfig({ background_color: value });
-              }
-            },
-            {
-              get: () => config.blanket_color || defaultConfig.blanket_color,
-              set: (value) => {
-                config.blanket_color = value;
-                window.elementSdk.setConfig({ blanket_color: value });
-              }
-            },
-            {
-              get: () => config.text_color || defaultConfig.text_color,
-              set: (value) => {
-                config.text_color = value;
-                window.elementSdk.setConfig({ text_color: value });
-              }
-            }
-          ],
-          borderables: [],
-          fontEditable: {
-            get: () => config.font_family || defaultConfig.font_family,
-            set: (value) => {
-              config.font_family = value;
-              window.elementSdk.setConfig({ font_family: value });
-            }
-          },
-          fontSizeable: {
-            get: () => config.font_size || defaultConfig.font_size,
-            set: (value) => {
-              config.font_size = value;
-              window.elementSdk.setConfig({ font_size: value });
-            }
-          }
-        }),
-        mapToEditPanelValues: (config) => new Map([
-          ['game_title', config.game_title || defaultConfig.game_title],
-          ['character_name', config.character_name || defaultConfig.character_name]
-        ])
-      });
-      
-      config = window.elementSdk.config;
-      onConfigChange(config);
+
+    // 傘ホールド（シーン3用）
+    function startRainPhase() {
+      umbrellaProgressValue = 0;
+      umbrellaHolding = false;
+      phaseCompleted = false;
+      rainProgress.textContent = '雨：■■■■■■■■■■■■（傘を押し続けてみましょう）';
+
+      // 一定時間後に判定（ケアが間に合わなければ ignore）
+      umbrellaTimer = setTimeout(() => {
+        if (!phaseCompleted && !finished) {
+          handleChoice('ignore');
+        }
+      }, 6000); // 全体の雨時間
     }
-    
-    initGame();
+
+    function updateRainProgressText() {
+      const rate = clamp(umbrellaProgressValue / UMBRELLA_TARGET, 0, 1);
+      const totalBlocks = 10;
+      const filled = Math.round(rate * totalBlocks);
+      const bar = '■'.repeat(filled) + '□'.repeat(totalBlocks - filled);
+      rainProgress.textContent = `雨：${bar}（傘を押している時間）`;
+    }
+
+    function onUmbrellaDown(e) {
+      const phase = phases[currentPhaseIndex];
+      if (finished || phaseCompleted || phase.mode !== 'umbrella') return;
+      umbrellaHolding = true;
+      umbrella.classList.add('holding');
+      e.preventDefault();
+
+      if (!umbrellaInterval) {
+        umbrellaInterval = setInterval(() => {
+          if (!umbrellaHolding) return;
+          umbrellaProgressValue++;
+          updateRainProgressText();
+          if (umbrellaProgressValue >= UMBRELLA_TARGET && !phaseCompleted) {
+            handleChoice('care');
+          }
+        }, 150);
+      }
+    }
+
+    function onUmbrellaUp() {
+      if (!umbrellaHolding) return;
+      umbrellaHolding = false;
+      umbrella.classList.remove('holding');
+    }
+
+    umbrella.addEventListener('mousedown', onUmbrellaDown);
+    umbrella.addEventListener('touchstart', onUmbrellaDown, { passive: false });
+
+    window.addEventListener('mouseup', onUmbrellaUp);
+    window.addEventListener('touchend', onUmbrellaUp);
+
+    // 初期化
+    updateBars();
+    showPhase();
+    messageArea.textContent = 'タコとの一日が始まります。まずは布団の様子を見てみましょう。';
+    addLog('ゲームを開始しました。');
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a0a80326125e394',t:'MTc2MzUwMDcxMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
